@@ -6,8 +6,8 @@ from drones.models import DroneCategory,Drone,Pilot,Competition
 from drones.serializers import DroneCategorySerializer,DroneSerializer,PilotSerializer,PilotCompetitionSerializer
 
 from rest_framework import filters #filters.FilterSet deprecated
-from django_filters import AllValuesFilter, DateTimeFilter, NumberFilter
-from django_filters.rest_framework import FilterSet #using this instead of rest_framework.filters.FilterSet
+# from django_filters import AllValuesFilter, DateTimeFilter, NumberFilter
+from django_filters import rest_framework as dfilters  #using this instead of rest_framework.filters.FilterSet
 
 class DroneCategoryList(generics.ListCreateAPIView):
     """
@@ -98,32 +98,33 @@ class PilotDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PilotSerializer
     name = 'pilot-detail'
 
-# class CompetitionFilter(FilterSet):
-#     from_achievement_date = DateTimeFilter(name='distance_achievement_date', lookup_expr='gte')
-#     to_achievement_date = DateTimeFilter(name='distance_achievement_date', lookup_expr='lte')
-#     min_distance_in_feet = NumberFilter(name='distance_in_feet', lookup_expr='gte')
-#     max_distance_in_feet = NumberFilter(name='distance_in_feet', lookup_expr='lte')
-#     drone_name = AllValuesFilter(name='drone__name')
-#     pilot_name = AllValuesFilter(name='pilot__name')
-#     class Meta:
-#         model = Competition
-#         fields = (
-#             'distance_in_feet',
-#             'from_achievement_date',
-#             'to_achievement_date',
-#             'min_distance_in_feet',
-#             'max_distance_in_feet',
-#             # drone__name will be accessed as drone_name
-#             'drone_name',
-#             # pilot__name will be accessed as pilot_name
-#             'pilot_name',
-#             )
+class CompetitionFilter(dfilters.FilterSet):
+    from_achievement_date = dfilters.DateTimeFilter(field_name='distance_achievement_date', lookup_expr='gte')
+    to_achievement_date = dfilters.DateTimeFilter(field_name='distance_achievement_date', lookup_expr='lte')
+    min_distance_in_feet = dfilters.NumberFilter(field_name='distance_in_feet', lookup_expr='gte')
+    max_distance_in_feet = dfilters.NumberFilter(field_name='distance_in_feet', lookup_expr='lte')
+    drone_name = dfilters.AllValuesFilter(field_name='drone__name')
+    pilot_name = dfilters.AllValuesFilter(field_name='pilot__name')
+    class Meta:
+        model = Competition
+        fields = (
+            'distance_in_feet',
+            'from_achievement_date',
+            'to_achievement_date',
+            'min_distance_in_feet',
+            'max_distance_in_feet',
+            # drone__name will be accessed as drone_name
+            'drone_name',
+            # pilot__name will be accessed as pilot_name
+            'pilot_name',
+            )
 
 class CompetitionList(generics.ListCreateAPIView):
     queryset = Competition.objects.all()
     serializer_class = PilotCompetitionSerializer
     name = 'competition-list'
-    # filter_class = CompetitionFilter
+    filter_backends = (dfilters.DjangoFilterBackend,)
+    filter_class = CompetitionFilter
     # ordering_fields = (
     #     'distance_in_feet',
     #     'distance_achievement_date',
