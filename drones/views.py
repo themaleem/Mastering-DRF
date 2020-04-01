@@ -1,9 +1,10 @@
 from django.shortcuts import render
+from django.contrib.auth.models import User
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from drones.models import DroneCategory,Drone,Pilot,Competition
-from drones.serializers import DroneCategorySerializer,DroneSerializer,PilotSerializer,PilotCompetitionSerializer
+from drones.serializers import DroneCategorySerializer,DroneSerializer,PilotSerializer,PilotCompetitionSerializer,UserSerializer
 
 from rest_framework import filters #filters.FilterSet deprecated
 # from django_filters import AllValuesFilter, DateTimeFilter, NumberFilter
@@ -152,6 +153,16 @@ class CompetitionDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PilotCompetitionSerializer
     name = 'competition-detail'
 
+class UserList(generics.ListCreateAPIView):
+    queryset= User.objects.all()
+    serializer_class= UserSerializer
+    name="user-list"
+
+class UserDetail(generics.ListCreateAPIView):
+    queryset= User.objects.all()
+    serializer_class= UserSerializer
+    name="user-detail"
+
 class ApiRoot(generics.GenericAPIView):
     name = 'api-root'
     def get(self, request, *args, **kwargs):
@@ -159,6 +170,7 @@ class ApiRoot(generics.GenericAPIView):
             'drone-categories': reverse(DroneCategoryList.name,request=request),
             'drones': reverse(DroneList.name, request=request),
             'pilots': reverse(PilotList.name, request=request),
-            'competitions': reverse(CompetitionList.name, request=request)
+            'competitions': reverse(CompetitionList.name, request=request),
+            'users': reverse(UserList.name, request=request)
             })
 
