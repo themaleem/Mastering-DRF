@@ -9,6 +9,10 @@ from rest_framework import filters #filters.FilterSet deprecated
 # from django_filters import AllValuesFilter, DateTimeFilter, NumberFilter
 from django_filters import rest_framework as dfilters  #using this instead of rest_framework.filters.FilterSet
 
+# permission classes
+from rest_framework import permissions
+from drones import custompermission
+
 class DroneCategoryList(generics.ListCreateAPIView):
     """
     Return a list of all the drone categories that 
@@ -39,9 +43,7 @@ class DroneList(generics.ListCreateAPIView):
     """
     Return a list of all the drones that 
     present within the queryset, with optional filtering.
-    ?search=<search-text>
-    &ordering=<ordering key>
-    &<any of the filtering_fields key below>
+    ?search=<search-text>&ordering=<ordering key>&<any of the filtering_fields key below>
 
     ie 127.0.0.1:8000/drones/?drone-category=1
     """
@@ -61,11 +63,26 @@ class DroneList(generics.ListCreateAPIView):
         'name',
         'manufacturing_date',
         )
+    
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        custompermission.IsCurrentUserOwnerOrReadOnly,
+        )
+    
+    #overriding the perform_create method in the 
+    #ListCreateAPIView super class
+    def perform_create(self,serializer):
+        return serializer.save(owner=self.request.user)
 
 class DroneDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Drone.objects.all()
     serializer_class = DroneSerializer
     name = 'drone-detail'
+
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        custompermission.IsCurrentUserOwnerOrReadOnly,
+        )
 
 class PilotList(generics.ListCreateAPIView):
     """
