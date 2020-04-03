@@ -13,6 +13,9 @@ from django_filters import rest_framework as dfilters  #using this instead of re
 # permission classes
 from rest_framework import permissions
 from drones import custompermission
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+
 
 class DroneCategoryList(generics.ListCreateAPIView):
     """
@@ -101,20 +104,32 @@ class PilotList(generics.ListCreateAPIView):
     filter_fields=(
         'name',
         'gender',
-        'race_count',
+        'races_count',
         )
     search_fields=(
         '^name',
         )
     ordering_field=(
         'name',
-        'race_count',
+        'races_count',
+        )
+    authentication_classes = (
+        TokenAuthentication,
+        )
+    permission_classes = (
+        IsAuthenticated,
         )
 
 class PilotDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Pilot.objects.all()
     serializer_class = PilotSerializer
     name = 'pilot-detail'
+    authentication_classes = (
+        TokenAuthentication,
+    )
+    permission_classes = (
+        IsAuthenticated,
+    )
 
 class CompetitionFilter(dfilters.FilterSet):
     from_achievement_date = dfilters.DateTimeFilter(field_name='distance_achievement_date', lookup_expr='gte')
@@ -158,7 +173,7 @@ class UserList(generics.ListCreateAPIView):
     serializer_class= UserSerializer
     name="user-list"
 
-class UserDetail(generics.ListCreateAPIView):
+class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset= User.objects.all()
     serializer_class= UserSerializer
     name="user-detail"

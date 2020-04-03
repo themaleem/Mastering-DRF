@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     # 3rd party
     'rest_framework',
     "django_filters",
+    # Token authentication
+    'rest_framework.authtoken',
     
 ]
 
