@@ -16,6 +16,7 @@ from drones import custompermission
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
+from rest_framework.throttling import ScopedRateThrottle
 
 class DroneCategoryList(generics.ListCreateAPIView):
     """
@@ -39,6 +40,10 @@ class DroneCategoryList(generics.ListCreateAPIView):
         )
 
 class DroneCategoryDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Shows details of the drone-category per its primary key
+    and lists all drones registered under the category 
+    """
     queryset = DroneCategory.objects.all()
     serializer_class = DroneCategorySerializer
     name = 'dronecategory-detail'
@@ -51,6 +56,10 @@ class DroneList(generics.ListCreateAPIView):
 
     ie 127.0.0.1:8000/drones/?drone-category=1
     """
+
+    throttle_scope = 'drones'
+    throttle_classes = (ScopedRateThrottle,)
+
     queryset = Drone.objects.all()
     serializer_class = DroneSerializer
     name = 'drone-list'
@@ -79,6 +88,13 @@ class DroneList(generics.ListCreateAPIView):
         return serializer.save(owner=self.request.user)
 
 class DroneDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Shows details of a drone per its primary key
+    """
+    
+    throttle_scope = 'drones'
+    throttle_classes = (ScopedRateThrottle,)
+
     queryset = Drone.objects.all()
     serializer_class = DroneSerializer
     name = 'drone-detail'
@@ -96,8 +112,12 @@ class PilotList(generics.ListCreateAPIView):
     &ordering=<ordering key>
     &<any of the filtering_fields key below>
 
-    ie 127.0.0.1:8000/drones/?name=
+    ie 127.0.0.1:8000/pilots/?name=
     """
+
+    throttle_scope = 'pilots'
+    throttle_classes = (ScopedRateThrottle,)
+    
     queryset = Pilot.objects.all()
     serializer_class = PilotSerializer
     name = 'pilot-list'
@@ -121,6 +141,15 @@ class PilotList(generics.ListCreateAPIView):
         )
 
 class PilotDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Shows details of a pilot per its primary key
+    and lists all competitions it has partaken in 
+    """
+
+    throttle_scope = 'pilots'
+    throttle_classes = (ScopedRateThrottle,)
+
+
     queryset = Pilot.objects.all()
     serializer_class = PilotSerializer
     name = 'pilot-detail'
@@ -132,12 +161,17 @@ class PilotDetail(generics.RetrieveUpdateDestroyAPIView):
     )
 
 class CompetitionFilter(dfilters.FilterSet):
+    """
+    Custom filter class for
+    for the competition API view classes
+    """ 
+
     from_achievement_date = dfilters.DateTimeFilter(field_name='distance_achievement_date', lookup_expr='gte')
     to_achievement_date = dfilters.DateTimeFilter(field_name='distance_achievement_date', lookup_expr='lte')
     min_distance_in_feet = dfilters.NumberFilter(field_name='distance_in_feet', lookup_expr='gte')
     max_distance_in_feet = dfilters.NumberFilter(field_name='distance_in_feet', lookup_expr='lte')
-    drone_name = dfilters.AllValuesFilter(field_name='drone__name')
-    pilot_name = dfilters.AllValuesFilter(field_name='pilot__name')
+    drone_name = dfilters.AllValuesFilter(field_name='drone__name') # drone.name field
+    pilot_name = dfilters.AllValuesFilter(field_name='pilot__name') # pilot.name field
     class Meta:
         model = Competition
         fields = (
@@ -169,6 +203,10 @@ class CompetitionDetail(generics.RetrieveUpdateDestroyAPIView):
     name = 'competition-detail'
 
 class UserList(generics.ListCreateAPIView):
+    """
+    Return a list of all users 
+    present within the queryset,
+    """
     queryset= User.objects.all()
     serializer_class= UserSerializer
     name="user-list"
@@ -179,6 +217,10 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     name="user-detail"
 
 class ApiRoot(generics.GenericAPIView):
+    """
+    API homepage
+    """
+
     name = 'api-root'
     def get(self, request, *args, **kwargs):
         return Response({
