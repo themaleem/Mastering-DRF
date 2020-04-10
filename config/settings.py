@@ -161,9 +161,9 @@ REST_FRAMEWORK = {
         ),
     
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '3/hour',
-        'user': '10/hour',
-        'drones': '20/hour',
-        'pilots': '15/hour',
+        'anon': '200/hour',
+        'user': '200/hour',
+        'drones': '200/hour',
+        'pilots': '200/hour',
         }
 }
