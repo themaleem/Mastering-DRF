@@ -2,8 +2,10 @@ from django.utils.http import urlencode
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from drones.models import DroneCategory
 from drones import views
+from drones.models import DroneCategory,Pilot
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 
 
 class DroneCategoryTests(APITestCase):
@@ -100,3 +102,168 @@ class DroneCategoryTests(APITestCase):
         get_response = self.client.get(url, format='json')
         assert get_response.status_code == status.HTTP_200_OK
         assert get_response.data['name'] == drone_category_name
+
+class PilotTests(APITestCase):
+    def post_pilot(self,name,gender,races_count):
+        url = reverse(views.PilotList.name)
+        data = {
+            'name': name,
+            'gender': gender,
+            'races_count': races_count,
+            }
+        response = self.client.post(url, data, format='json')
+        return response
+
+    def create_user_and_set_token_credentials(self):
+        user = User.objects.create_user(
+            'olumide', 
+            'olu@example.com', 
+            'P4ssw0rD'
+            )
+        token = Token.objects.create(user=user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Token {0}'.format(token.key)
+            )
+    def test_post_get_patch_and_delete_pilot(self):
+        """
+        Ensure we can create a new Pilot and then retrieve it
+        Ensure we cannot retrieve the persisted pilot without a token
+        Ensure we can partially update existing pilot instance
+        Ensure we can delete existing pilot instance
+        """
+        self.create_user_and_set_token_credentials()
+        pilot_name = 'Olumide'
+        pilot_gender = Pilot.MALE
+        pilot_races_count = 5
+        response = self.post_pilot(
+            pilot_name,
+            pilot_gender,
+            pilot_races_count
+            )
+        print("PK {0}".format(Pilot.objects.get().pk))
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Pilot.objects.count() == 1
+
+        # retrieve pilot
+        saved_pilot = Pilot.objects.get()
+        assert saved_pilot.name == pilot_name
+        assert saved_pilot.gender == pilot_gender
+        assert saved_pilot.races_count == pilot_races_count
+        # retrieve pilot detail with pk
+        url= reverse(
+            views.PilotDetail.name,
+            None,
+            {saved_pilot.pk})
+        authorized_get_response=self.client.get(url,format='json')
+        assert authorized_get_response.status_code == status.HTTP_200_OK
+        assert authorized_get_response.data['name'] == pilot_name
+        assert authorized_get_response.data['gender'] == pilot_gender
+        
+        # patching pilot instance
+        new_pilot_name = "Olu Bello"
+        data={
+            'name': new_pilot_name
+        }
+        updated_pilot_response = self.client.patch(
+            url,
+            data,
+            format='json'
+            )
+        assert updated_pilot_response.status_code == status.HTTP_200_OK
+        assert updated_pilot_response.data['name'] == new_pilot_name
+        # delete instance
+        delete_instance=self.client.delete(url,format='json')
+        assert delete_instance.status_code == status.HTTP_204_NO_CONTENT
+        assert Pilot.objects.count()==0
+        
+        # This cleans up the set credentials
+        self.client.credentials()
+        
+        unauthorized_get_response= self.client.get(url,format='json')
+        assert unauthorized_get_response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_try_post_pilot_without_token(self):
+        """
+        Ensure we cannot post pilot 
+        without token
+        """
+        pilot_name='maleem'
+        pilot_gender=Pilot.MALE
+        races_count= 6
+        response=self.post_pilot(
+            pilot_name,
+            pilot_gender,
+            races_count
+        )
+        assert response.status_code==status.HTTP_401_UNAUTHORIZED
+        assert Pilot.objects.count() == 0
+    
+    def test_try_to_post_existing_pilot(self):
+        """
+        Ensure we cannot post pilot
+        with same name twice
+        """
+        pilot_name_1="maleem"
+        pilot_name_2="maleem"
+        gender=Pilot.FEMALE
+        races_count= 7
+        self.create_user_and_set_token_credentials()
+        response=self.post_pilot(
+            pilot_name_1,
+            gender,
+            races_count
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Pilot.objects.get().name == pilot_name_1
+
+        new_response = self.post_pilot(
+            pilot_name_2,
+            gender,
+            races_count
+        )
+        assert new_response.status_code != status.HTTP_201_CREATED
+    
+    def test_search_existing_pilots(self):
+        """
+        Ensure we can filter pilots
+        with search query parameter
+        """
+        pilot_name_1="maleem"
+        pilot_name_2="maleem2"
+        pilot_name_3="olumide"
+        gender=Pilot.FEMALE
+        races_count= 7
+        self.create_user_and_set_token_credentials()
+        response=self.post_pilot(
+            pilot_name_1,
+            gender,
+            races_count
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+
+        response2 = self.post_pilot(
+            pilot_name_2,
+            gender,
+            races_count
+        )
+        assert response2.status_code == status.HTTP_201_CREATED
+        response3 = self.post_pilot(
+            pilot_name_3,
+            gender,
+            races_count
+        )
+        assert response3.status_code == status.HTTP_201_CREATED
+        assert Pilot.objects.count() == 3
+        assert response.data['name'] == pilot_name_1 
+        assert response2.data['name'] == pilot_name_2 
+        assert response3.data['name'] == pilot_name_3
+
+        search_startswith = { 'search' : 'ma' }
+        url = '{0}?{1}'.format(
+            reverse(views.PilotList.name),
+            urlencode(search_startswith))
+
+        response = self.client.get(url, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        # Make sure we receive only two element in the response
+        assert response.data['count'] == 2
