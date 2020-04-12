@@ -244,6 +244,18 @@ class DroneCategoryList2(viewsets.ModelViewSet):
         serializer=DroneSerializer2(drones,many=True)
         return Response(serializer.data,status=200)
 
+    @action(detail=True, methods=["POST"])
+    def drone(self,request,pk=None):
+        drone_category=self.get_object()
+        data=request.data
+        data['drone_category']= drone_category.pk
+        data['owner']= request.user.pk
+        serializer=DroneSerializer2(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=200)
+        return Response(serializer.errors,status=200)
+        
 class ApiRoot(generics.GenericAPIView):
     """
     API homepage
