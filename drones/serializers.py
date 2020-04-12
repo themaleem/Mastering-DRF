@@ -101,3 +101,15 @@ class PilotCompetitionSerializer(serializers.ModelSerializer):
 			'distance_achievement_date',
 			'pilot',
 			'drone')
+
+class DroneSerializer2(serializers.ModelSerializer):
+	# Display the category name    
+	class Meta:
+		model = Drone
+		fields = (
+			'name',
+			'owner',
+			'drone_category',
+			'manufacturing_date',
+			'has_it_competed',
+			'inserted_timestamp')

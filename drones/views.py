@@ -4,19 +4,19 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from drones.models import DroneCategory,Drone,Pilot,Competition
-from drones.serializers import DroneCategorySerializer,DroneSerializer,PilotSerializer,PilotCompetitionSerializer,UserSerializer
-
+from drones.serializers import DroneCategorySerializer,DroneSerializer,PilotSerializer,PilotCompetitionSerializer,UserSerializer,DroneSerializer2
 from rest_framework import filters #filters.FilterSet deprecated
 # from django_filters import AllValuesFilter, DateTimeFilter, NumberFilter
 from django_filters import rest_framework as dfilters  #using this instead of rest_framework.filters.FilterSet
 
 # permission classes
-from rest_framework import permissions
+from rest_framework import permissions,viewsets,status
 from drones import custompermission
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.decorators import action
 
 class DroneCategoryList(generics.ListCreateAPIView):
     """
@@ -215,6 +215,34 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset= User.objects.all()
     serializer_class= UserSerializer
     name="user-detail"
+
+class DroneCategoryList2(viewsets.ModelViewSet):
+    """
+    Return a list of all the drone categories that 
+    present within the queryset, with optional filtering.
+    ?search=<search-text>
+    &ordering=<ordeing keyr>
+    &filter=<>
+    """
+    queryset = DroneCategory.objects.all()
+    serializer_class = DroneCategorySerializer
+    name = 'dronecategory-list'
+    filter_fields=(
+        'name',
+        )
+    search_fields=(
+        '^name',
+        )
+    ordering_field=(
+        'name',
+        )
+
+    @action(detail=True, methods=["GET"])
+    def drones(self,request,pk=None):
+        drone_category=self.get_object()
+        drones=drone_category.drones
+        serializer=DroneSerializer2(drones,many=True)
+        return Response(serializer.data,status=200)
 
 class ApiRoot(generics.GenericAPIView):
     """
